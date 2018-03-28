@@ -1,0 +1,33 @@
+{
+  "name": "contact-centre-node",
+  "version": "1.0.0",
+  "description": "node based twilio taskrouter based inbound voice contact centre",
+  "main": "server.js",
+  "scripts": {
+    "test": "test",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SeekTom/Contact-Centre-Node.git"
+  },
+  "keywords": [
+    "twilio",
+    "node",
+    "taskrouter",
+    "contact",
+    "centre"
+  ],
+  "author": "Thomas Curtis",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/SeekTom/Contact-Centre-Node/issues"
+  },
+  "homepage": "https://github.com/SeekTom/Contact-Centre-Node#readme",
+  "dependencies": {
+    "dotenv": "^5.0.1",
+    "express": "^4.16.3",
+    "mustache-express": "^1.2.5",
+    "twilio": "^3.14.0"
+  }
+}

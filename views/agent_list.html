@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+   <link type="text/css"  rel="stylesheet" href="//media.twiliocdn.com/taskrouter/quickstart/agent.css"/>
+
+</head>
+<body>
+<div id="workers">
+	 <h2>A selection of voice workers</h2>
+    <div id="workers" />
+    <script language="javascript">
+    	voice_workers = {{ voice_workers }};
+
+    	for (voice_worker in voice_workers.toString())
+    	{
+          
+        var badge = document.createElement('div');
+        var workerSid = voice_workers[i].sid;
+        var workerName = voice_workers[i].friendly_name;
+        var activity = voice_workers[i].activity_name;
+        badge.className = 'workers';
+        badge.innerHTML =
+            '<a href="/agents?WorkerSid="' + voice_worker.sid+'">' + workerName + '</a>'+ voice_worker.activity_name;
+         document.getElementById(workers).appendChild(badge);
+
+    //  <a href="/agents?WorkerSid={{ voice_worker.sid }}">{{ voice_worker.friendly_name }}</a>  
+
+    // ({{ voice_worker.activity_name }})</font><br />
+     }
+</script>
+</div>
+<div style="padding-top:1.5em">
+    <a href="/">Back to Main Page</a>
+</div>
+</body>
+</html>
