@@ -7,23 +7,30 @@
 
 </head>
 <body>
-<div id="workers">
+<div>
 	 <h2>A selection of voice workers</h2>
     <div id="workers" />
     <script language="javascript">
-    	voice_workers = {{ voice_workers }};
+      voice_workers ="{{ voice_workers }}";
 
-    	for (voice_worker in voice_workers.toString())
+        for(var i = 0; i < JSON.stringify(voice_workers.length); i++) {
+          console.log(voice_workers[i].friendlyName);  
+           var workerSid = voice_workers[i].sid;
+        var workerName = voice_workers[i].friendlyName;
+        var activity = voice_workers[i].activityName;
+           
+        }
+        
+        
+    	for (var voice_worker in voice_workers)
     	{
-          
-        var badge = document.createElement('div');
-        var workerSid = voice_workers[i].sid;
-        var workerName = voice_workers[i].friendly_name;
-        var activity = voice_workers[i].activity_name;
-        badge.className = 'workers';
-        badge.innerHTML =
-            '<a href="/agents?WorkerSid="' + voice_worker.sid+'">' + workerName + '</a>'+ voice_worker.activity_name;
-         document.getElementById(workers).appendChild(badge);
+
+       // console.log(voice_worker);
+        
+        var workerSid = voice_worker.sid;
+        var workerName = voice_worker.friendlyName;
+        var activity = voice_worker.activityName;
+         document.getElementById("workers").innerHTML =  '<a href="/agents?WorkerSid="' + voice_worker.sid+'">' + workerName + '</a>'+ voice_worker.activityName;
 
     //  <a href="/agents?WorkerSid={{ voice_worker.sid }}">{{ voice_worker.friendly_name }}</a>  
 
