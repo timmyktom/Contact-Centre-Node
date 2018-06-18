@@ -17,6 +17,11 @@ const caller_id =process.env.TWILIO_ACME_CALLERID;
 const wrap_up =process.env.TWILIO_ACME_WRAP_UP_ACTIVTY;
 const twiml_app = process.env.TWILIO_ACME_TWIML_APP_SID;
 
+app.use(function(req, res, next) {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  next();
+});
 
 app.use( bodyParser.json() );       // to support JSON-encoded bodies
 app.use(bodyParser.urlencoded({     // to support URL-encoded bodies
