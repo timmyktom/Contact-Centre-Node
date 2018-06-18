@@ -41,9 +41,7 @@
 
 
     <script type="text/javascript">
-
-        Twilio.Device.setup("{{ token }}", {debug: true});
-
+       
         Twilio.Device.ready(function (device) {
             console.log("Client is ready for connections");
         });
@@ -88,15 +86,15 @@
             });
         }
 
-    </script>
 
-    <script type="text/javascript">
         //TaskRouter JS code
         let ReservationObject;
         let isManager = false;  // workaround for worker's skills not being passed with a reservation
 
-        function registerTaskRouterCallbacks() {
-            worker.on('ready', function (worker) {
+        function registerTaskRouterCallbacks(data) {
+            console.log('called');
+              var worker = new Twilio.TaskRouter.Worker(data);     
+              worker.on('ready', function (worker) {
                 logger("Successfully registered as: " + worker.friendlyName);
                 if(worker.attributes.skills && worker.attributes.skills.includes('manager')) {
                     document.querySelector('h2').innerHTML = "ACME manager desktop: " + worker.friendlyName;
@@ -105,12 +103,9 @@
                     document.querySelector('h2').innerHTML = "ACME agent desktop: " + worker.friendlyName;
                 }
                 if(worker.attributes.skills) {
-                    logger("Skills: " + worker.attributes.skills.join(', '));
+                    logger("Skills: " + worker.attributes.skills);
                 }
-                if(worker.attributes.languages) {
-                    logger("Languages: " + worker.attributes.languages.join(', '));
-                }
-                logger("Current activity is: " + worker.activityName);
+                    logger("Current activity is: " + worker.activityName);
                 refreshWorkerUI(worker);
             });
 
@@ -341,10 +336,40 @@
         window.onload = function () {
             // Initialize TaskRouter.js on page load using window.workerToken -
             // a Twilio Capability token that was set from rendering the template with agents endpoint
-            logger("Initializing...");
-            window.worker = new Twilio.TaskRouter.Worker("{{ worker_token| safe }}");
-            registerTaskRouterCallbacks();
+          
 
+            function getParameterByName(name, url) {
+                if (!url) url = window.location.href;
+                name = name.replace(/[\[\]]/g, "\\$&");
+                var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+                    results = regex.exec(url);
+                if (!results) return null;
+                if (!results[2]) return '';
+                return decodeURIComponent(results[2].replace(/\+/g, " "));
+            }  
+
+            let Worker_sid = getParameterByName('WorkerSid'); 
+            
+            
+            $.post( "/worker_token", { WorkerSid: Worker_sid })
+              .done(function( data ) {  
+              
+               registerTaskRouterCallbacks(data);
+              });   
+
+
+              
+
+            $.post( "/client_token", { WorkerSid: Worker_sid })
+              .done(function( data ) {
+                Twilio.Device.setup(data, {debug: true});
+              
+              });         
+           
+             
+           
+             logger("Initializing...");
+            
         };
     </script>
 </head>

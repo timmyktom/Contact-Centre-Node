@@ -2,7 +2,9 @@ require('dotenv').load();
 
 const express = require('express');
 var mustacheExpress = require('mustache-express');
+var request = require('request');
 var twilio = require('twilio');
+var bodyParser = require('body-parser')
 
 const app = express();
 const accountSid = process.env.TWILIO_ACME_ACCOUNT_SID;
@@ -13,11 +15,16 @@ const VoiceResponse = require('twilio').twiml.VoiceResponse;
 const workflow_sid = process.env.TWILIO_ACME_SUPPORT_WORKFLOW_SID;
 const caller_id =process.env.TWILIO_ACME_CALLERID;
 const wrap_up =process.env.TWILIO_ACME_WRAP_UP_ACTIVTY;
+const twiml_app = process.env.TWILIO_ACME_TWIML_APP_SID;
 
+app.use( bodyParser.json() );       // to support JSON-encoded bodies
+app.use(bodyParser.urlencoded({     // to support URL-encoded bodies
+  extended: true
+})); 
+//app.set('view engine', 'liquid');
 // Register '.html' extension with The Mustache Express
 app.engine('html', mustacheExpress());
-
-app.set('view engine', 'mustache');
+//app.set('view engine', 'mustache');
 
 app.set('views', __dirname + '/views'); // you can change '/views' to '/public',
     // but I recommend moving your templates to a directory
@@ -76,68 +83,119 @@ res.type('application/json');
     res.send(dequeue);
 
 });
+
 app.get('/agent_list', function (req, res) {
+  res.render('agent_list.html');
+  });
+
+
+app.post('/agent_list', function (req, res) {
      client.taskrouter.v1
   .workspaces(workspaceSid)
   .workers
   .list( { TargetWorkersExpression: 'worker.channel.chat.configured_capacity > 0' })
 .then((workers) => {
-	//console.log(workers);
-	var voice_workers =  workers;
-  //workers.forEach((worker) => console.log(worker.friendlyName));
- //res.set({ 'content-type': 'application/json; charset=utf-8' })
- console.log(voice_workers);
-  res.render('agent_list.html', {'voice_workers': voice_workers.toString()});
-	 });
- 	
-});
-
-
-  
-
-
-/*
-app.use(express.static(__dirname + '/public'));
-
-//app.get('/', (req, res) => res.sendFile('index.html'));
-app.get('/', function(req, res) 
-{
-	res.writeHead(200, {
-  'Content-Type': 'text/html',
-  'Content-Length': '6000',
-  'Accept-Ranges': 'bytes',
-  'Cache-Control': 'no-cache'
-
-});
-
-res.sendFile('index.html');
+  //console.log(workers);
+  var voice_workers = workers;
  
+  res.setHeader('Content-Type', 'application/json');
+  res.send(voice_workers);
 
-	
+  });
+  
 });
 
+app.get('/agents', function (req, res) {
+  res.render('agent_desktop.html');
+});
   
-app.get('/agent_list', function(req, res) {
+app.post('/worker_token', function(req, res){
 
-var voice_workers = client.taskrouter.v1
-  .workspaces(workspaceSid)
-  .workers
-  .list( { TargetWorkersExpression: 'worker.channel.chat.configured_capacity > 0' })
-.then((workers) => {
-	console.log(workers);
-  //workers.forEach((worker) => console.log(worker.friendlyName));
-  res.sendFile(__dirname + '/public/agent_list.html');
-  res.send(workers);
-	 });
-	
-	
-	
-}); 
+const taskrouter = require('twilio').jwt.taskrouter;
+const util = taskrouter.util;
+
+const TaskRouterCapability = taskrouter.TaskRouterCapability;
+const Policy = TaskRouterCapability.Policy;
+
+const TASKROUTER_BASE_URL = 'https://taskrouter.twilio.com';
+const version = 'v1';
+const workerSid = req.body.WorkerSid;
+
+const capability = new TaskRouterCapability({
+  accountSid: accountSid,
+  authToken: authToken,
+  workspaceSid: workspaceSid,
+  channelId: workerSid});
+
+// Helper function to create Policy
+function buildWorkspacePolicy(options) {
+  options = options || {};
+  var resources = options.resources || [];
+  var urlComponents = [TASKROUTER_BASE_URL, version, 'Workspaces', workspaceSid]
+
+  return new Policy({
+    url: urlComponents.concat(resources).join('/'),
+    method: options.method || 'GET',
+    allow: true
+  });
+}
+
+// Event Bridge Policies
+var eventBridgePolicies = util.defaultEventBridgePolicies(accountSid, workerSid);
+
+var workspacePolicies = [
+  // Workspace fetch Policy
+  buildWorkspacePolicy(),
+  // Workspace subresources fetch Policy
+  buildWorkspacePolicy({ resources: ['**'] }),
+  // Workspace Activities Update Policy
+  buildWorkspacePolicy({ resources: ['Activities'], method: 'POST' }),
+  // Workspace Activities Worker Reserations Policy
+  buildWorkspacePolicy({ resources: ['Workers', workerSid, 'Reservations', '**'], method: 'POST' }),
+];
+
+eventBridgePolicies.concat(workspacePolicies).forEach(function (policy) {
+  capability.addPolicy(policy);
+});
+
+var token = capability.toJwt();
+
+console.log(token);
+
+res.send(token);
+});
+
+app.post('/activities', function(req, res){
+const act = {}; // create an empty array
 
 
-app.get('/agents', (req, res) => res.sendFile(__dirname + '/public/agent_desktop.html')); 
+client.taskrouter.workspaces(workspaceSid)
+                 .activities
+                 .each(activities => act[activites.friendName] = activities.sid);         
+
+})
 
 
-*/
+app.post('/client_token', function(req, res){
+ //let response = new twilio.Response();
+
+ let ClientCapability = twilio.jwt.ClientCapability;
+
+  const identity =  req.body.WorkerSid;
+ 
+  const capability = new ClientCapability({
+    accountSid: accountSid,
+    authToken: authToken,
+  });
+
+  capability.addScope(new ClientCapability.IncomingClientScope(identity));
+  capability.addScope(new ClientCapability.OutgoingClientScope({
+    applicationSid: twiml_app,
+    clientName: identity,
+  }));
+
+  res.send(capability.toJwt());
+
+});
 
 app.listen(3000, () => console.log('Example app listening on port 3000!'));
