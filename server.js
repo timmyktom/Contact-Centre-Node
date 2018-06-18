@@ -17,6 +17,7 @@ const caller_id =process.env.TWILIO_ACME_CALLERID;
 const wrap_up =process.env.TWILIO_ACME_WRAP_UP_ACTIVTY;
 const twiml_app = process.env.TWILIO_ACME_TWIML_APP_SID;
 
+
 app.use( bodyParser.json() );       // to support JSON-encoded bodies
 app.use(bodyParser.urlencoded({     // to support URL-encoded bodies
   extended: true
@@ -167,15 +168,61 @@ res.send(token);
 
 app.post('/activities', function(req, res){
 var list = [];
-var activities = client.taskrouter.workspaces(workspaceSid)
-                 .activities
-                 .each(activities => function(activities){
-                  list[activities.friendlyName] = activities.sid 
-        })
-                 
+
+client.taskrouter.v1
+.workspaces(workspaceSid)
+.activities
+.list()
+.then((activities) => {
+
+  res.setHeader('Content-Type', 'application/json');
   
-  res.send(list);                      
+res.send(activities);
+
+});
+
+
 })
+
+// var activities = client.taskrouter.workspaces(workspaceSid)
+//                  .activities
+//                  .each(activities => console.log(activities.sid)).then(function(activities){
+//                   async.forEachOf(activities,  function iterator(activities, index, callback) {
+                  
+//                     list.push({
+//                       'key': activities.friendlyName,
+//                       'value': activities.sid
+
+//                     }), function (err) {
+//                       if (err) console.error(err.message);
+//                       res.send(list);
+//                       console.log('list' +list);
+
+//                     }
+
+//                  });
+//           })
+// })
+// var activities = client.taskrouter.workspaces(workspaceSid)
+//                 .activities
+//                 .each(activities => function(){
+//                    list[activities.friendlyName] = activities.sid
+//                 })
+//         .then(activities => res.send(list))
+//         .done(); 
+
+
+
+  
+// app.post('/activities', function(req, res){
+// var list = [];
+// var activities = client.taskrouter.workspaces(workspaceSid)
+//                 .activities
+//                 .each(activities => console.log(activities.sid))
+       
+//  res.send(list);                      
+// })
+
 
 
 

@@ -4,7 +4,7 @@
     <title>OwlCorp - Chat Agent Screen</title>
 
     <script type="text/javascript" src="//media.twiliocdn.com/sdk/js/client/v1.4/twilio.min.js"></script>
-    <script type="text/javascript" src="//media.twiliocdn.com/taskrouter/js/v1.10/taskrouter.min.js"></script>
+    <script type="text/javascript" src="//media.twiliocdn.com/taskrouter/js/v1.13/taskrouter.min.js"></script>
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
 
     <link type="text/css" rel="stylesheet" href="//media.twiliocdn.com/taskrouter/quickstart/agent.css"/>
@@ -41,7 +41,8 @@
 
 
     <script type="text/javascript">
-       
+
+   
         Twilio.Device.ready(function (device) {
             console.log("Client is ready for connections");
         });
@@ -74,7 +75,7 @@
             Twilio.Device.disconnectAll();
             ReservationObject.task.complete();
 
-            worker.update("ActivitySid", "{{ activity['WrapUp'] }}", function (error, worker) {
+            worker.update("ActivitySid", activity_list["WrapUp"], function (error, worker) {
                 logger(worker.friendlyName + " has ended the call");
 
                 if (error) {
@@ -89,11 +90,11 @@
 
         //TaskRouter JS code
         let ReservationObject;
+       
         let worker;
         let isManager = false;  // workaround for worker's skills not being passed with a reservation
-
+        let activity_list = {};
         function registerTaskRouterCallbacks(data) {
-            console.log('called');
               worker = new Twilio.TaskRouter.Worker(data);     
               worker.on('ready', function (worker) {
                 logger("Successfully registered as: " + worker.friendlyName);
@@ -148,7 +149,8 @@
 
         function goAvailable() {
             // update worker's activity to Idle
-            worker.update("ActivitySid", "{{ activity['Idle'] }}", function (error, worker) {
+
+            worker.update("ActivitySid", activity_list["Idle"], function (error, worker) {
                 if (error) {
                     console.log(error.code);
                     console.log(error.message);
@@ -158,7 +160,8 @@
 
         function goOffline() {
             // update worker's activity to Offline
-            worker.update("ActivitySid", "{{ activity['Offline'] }}", function (error, worker) {
+           
+           worker.update("ActivitySid",  "WA20c6530534f9ef1361747282aa2158d0", function (error, worker) {
                 if (error) {
                     console.log(error.code);
                     console.log(error.message);
@@ -257,7 +260,7 @@
                 // not a transfer, simply create a new conference and join customer and worker into it
                 var options = {
                     "From": "{{ caller_id }}",  // CC's phone number
-                    "PostWorkActivitySid": "{{ activity['WrapUp'] }}",
+                    "PostWorkActivitySid": activity_list["WrapUp"],
                     "Timeout": "30",
                     "Record": "true",
                     "RecordingStatusCallback": window.location.protocol + "//" + window.location.host + "/recording_callback",
@@ -334,6 +337,7 @@
             log.scrollTop = log.scrollHeight;
         }
 
+      
         window.onload = function () {
             // Initialize TaskRouter.js on page load using window.workerToken -
             // a Twilio Capability token that was set from rendering the template with agents endpoint
@@ -359,7 +363,40 @@
               });   
 
 
-              
+             $.post("/activities").done(function(data){
+               
+                var name;
+                var sid;
+                
+                
+                for (var i = 0; i < data.length; i++){
+                
+                    if (data[i] !== 'undefined'){
+                    var obj = data[i];
+               
+                for (var key in obj){
+                    
+                    if (key =='friendlyName'){                       
+                        name = obj[key];
+
+                    }else if(key =='sid'){
+                        sid = obj[key];
+                    }
+                    activity_list[name] = sid;
+                       
+                    
+                }
+            
+            }
+        }
+           // console.log(activity_list['Idle']);
+                    
+                })
+
+                 
+
+
+           
 
             $.post( "/client_token", { WorkerSid: Worker_sid })
               .done(function( data ) {
