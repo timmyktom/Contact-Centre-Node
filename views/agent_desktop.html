@@ -89,11 +89,12 @@
 
         //TaskRouter JS code
         let ReservationObject;
+        let worker;
         let isManager = false;  // workaround for worker's skills not being passed with a reservation
 
         function registerTaskRouterCallbacks(data) {
             console.log('called');
-              var worker = new Twilio.TaskRouter.Worker(data);     
+              worker = new Twilio.TaskRouter.Worker(data);     
               worker.on('ready', function (worker) {
                 logger("Successfully registered as: " + worker.friendlyName);
                 if(worker.attributes.skills && worker.attributes.skills.includes('manager')) {

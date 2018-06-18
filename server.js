@@ -166,14 +166,17 @@ res.send(token);
 });
 
 app.post('/activities', function(req, res){
-const act = {}; // create an empty array
-
-
-client.taskrouter.workspaces(workspaceSid)
+var list = [];
+var activities = client.taskrouter.workspaces(workspaceSid)
                  .activities
-                 .each(activities => act[activites.friendName] = activities.sid);         
-
+                 .each(activities => function(activities){
+                  list[activities.friendlyName] = activities.sid 
+        })
+                 
+  
+  res.send(list);                      
 })
+
 
 
 app.post('/client_token', function(req, res){
