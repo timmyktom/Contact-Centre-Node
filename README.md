@@ -1,4 +1,4 @@
-# Contact-Centre Version 0.0
+# Contact-Centre Version 1.0
 
 Inbound PSTN to Twilio Client Contact Centre Powered by Taskrouter 
 
@@ -19,6 +19,3 @@ This implements:
 - Call transfers
 - Optional assignment_callback url implementation
 
-KNOWN ISSUES:
-
-CORS error when updating worker activity state
