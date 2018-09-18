@@ -41,7 +41,7 @@
 
 
     <script type="text/javascript">
-
+        let caller_id = '+448081645567';
    
         Twilio.Device.ready(function (device) {
             console.log("Client is ready for connections");
@@ -90,7 +90,6 @@
 
         //TaskRouter JS code
         let ReservationObject;
-        let caller_id = '+448081645567';
         let worker;
         let isManager = false;  // workaround for worker's skills not being passed with a reservation
         let activity_list = {};
