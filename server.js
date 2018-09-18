@@ -5,6 +5,7 @@ var mustacheExpress = require('mustache-express');
 var request = require('request');
 var twilio = require('twilio');
 var bodyParser = require('body-parser')
+
 const taskrouter = require('twilio').jwt.taskrouter;
 const util = taskrouter.util;
 
@@ -13,6 +14,7 @@ const Policy = TaskRouterCapability.Policy;
 
 
 const app = express();
+
 const accountSid = process.env.TWILIO_ACME_ACCOUNT_SID;
 const authToken = process.env.TWILIO_ACME_AUTH_TOKEN;
 const workspaceSid = process.env.TWILIO_ACME_WORKSPACE_SID;
@@ -26,7 +28,6 @@ const twiml_app = process.env.TWILIO_ACME_TWIML_APP_SID;
 const TASKROUTER_BASE_URL = 'https://taskrouter.twilio.com';
 const version = 'v1';
 const ClientCapability = require('twilio').jwt.ClientCapability;
-
 
 function buildWorkspacePolicy(options) {
   options = options || {};

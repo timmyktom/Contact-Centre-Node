@@ -90,7 +90,7 @@
 
         //TaskRouter JS code
         let ReservationObject;
-       
+        let caller_id = '+448081645567';
         let worker;
         let isManager = false;  // workaround for worker's skills not being passed with a reservation
         let activity_list = {};
@@ -150,7 +150,7 @@
 
         function goAvailable() {
             // update worker's activity to Idle
-
+            console.log(activity_list["Idle"]);
             worker.update("ActivitySid", activity_list["Idle"], function (error, worker) {
                 if (error) {
                     console.log(error.code);
@@ -162,7 +162,7 @@
         function goOffline() {
             // update worker's activity to Offline
            
-           worker.update("ActivitySid",  "WA20c6530534f9ef1361747282aa2158d0", function (error, worker) {
+           worker.update("ActivitySid",  activity_list["Offline"], function (error, worker) {
                 if (error) {
                     console.log(error.code);
                     console.log(error.message);
@@ -233,11 +233,10 @@
                 console.log(window.location.protocol + "//" + window.location.host + "/transferTwiml?conference=" + ReservationObject.task.attributes.customer_taskSid)
                     ReservationObject.call(
                     // callFrom
-                    "{{ caller_id }}",  // CC's phone number
+                    caller_id,  // CC's phone number
                     // callUrl - URI that is executed on the answering Worker's leg
                     window.location.protocol + "//" + window.location.host + "/transferTwiml?conference=" + ReservationObject.task.attributes.customer_taskSid,
                     // callStatusCallbackUrl (optional) - status callback url
-                    window.location.protocol + "//" + window.location.host + "/conference_callback",
                     // callAccept (optional) - accept the task before initiating call
                     "false",
                     // callRecord (optional) - record-from-answer or false - false since we're already recoding the main conference
@@ -260,14 +259,10 @@
                 
                 // not a transfer, simply create a new conference and join customer and worker into it
                 var options = {
-                    "From": "{{ caller_id }}",  // CC's phone number
+                    "From": caller_id,  // CC's phone number
                     "PostWorkActivitySid": activity_list["WrapUp"],
                     "Timeout": "30",
-                    "Record": "true",
-                    "RecordingStatusCallback": window.location.protocol + "//" + window.location.host + "/recording_callback",
-                    "ConferenceStatusCallback": window.location.protocol + "//" + window.location.host + "/conference_callback",
-                    "ConferenceStatusCallbackEvent": "start,end,join,leave"
-                };
+                      };
                 console.log("Starting conference...");
                 console.log(options);
 
