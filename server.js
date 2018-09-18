@@ -29,11 +29,15 @@ const TASKROUTER_BASE_URL = 'https://taskrouter.twilio.com';
 const version = 'v1';
 const ClientCapability = require('twilio').jwt.ClientCapability;
 
-function buildWorkspacePolicy(options) {
+function buildWorkspacePolicy(options, context) {
+  const taskrouter = Twilio.jwt.taskrouter;
+  const TaskRouterCapability = taskrouter.TaskRouterCapability;
+  const Policy = TaskRouterCapability.Policy;
   options = options || {};
+  var version = 'v1';
   var resources = options.resources || [];
-  var urlComponents = [TASKROUTER_BASE_URL, version, 'Workspaces', workspaceSid]
-
+  const TASKROUTER_BASE_URL = 'https://' + 'taskrouter.twilio.com';
+  var urlComponents = [TASKROUTER_BASE_URL, version, 'Workspaces', context.TWILIO_WORKSPACE_SID]
   return new Policy({
     url: urlComponents.concat(resources).join('/'),
     method: options.method || 'GET',
@@ -159,38 +163,88 @@ app.post('/activities', function (req, res) {
 
 })
 
-app.post('/worker_token', function (req, res) {
+app.post('/worker_token', function(req, res){
 
-  const workerSid = req.body.WorkerSid;
-
+  let jwt = require('jsonwebtoken');
+  const response = new Twilio.Response();
+  
+  response.appendHeader('Access-Control-Allow-Origin', '*');
+  response.appendHeader('Access-Control-Allow-Methods', 'POST');
+  response.appendHeader('Content-Type', 'application/json');
+  response.appendHeader('Access-Control-Allow-Headers', 'Content-Type');
+  
+  const worker = event.workerSid;
+  const taskrouter = Twilio.jwt.taskrouter;
+  const util = Twilio.jwt.taskrouter.util;
+  const TaskRouterCapability = taskrouter.TaskRouterCapability;
   const capability = new TaskRouterCapability({
-    accountSid: accountSid,
-    authToken: authToken,
-    workspaceSid: workspaceSid,
-    channelId: workerSid
-  });
-
-  var eventBridgePolicies = util.defaultEventBridgePolicies(accountSid, workerSid);
-
+    accountSid: context.ACCOUNT_SID,
+    authToken: context.AUTH_TOKEN,
+    workspaceSid: context.TWILIO_WORKSPACE_SID,
+    channelId: worker,
+    ttl: 2880});
+  // Event Bridge Policies
+  var eventBridgePolicies = util.defaultEventBridgePolicies(context.ACCOUNT_SID, worker);
   var workspacePolicies = [
     // Workspace fetch Policy
-    buildWorkspacePolicy(),
-    // Workspace subresources fetch Policy
-    buildWorkspacePolicy({ resources: ['**'] }),
+    buildWorkspacePolicy({}, context),
     // Workspace Activities Update Policy
-    buildWorkspacePolicy({ resources: ['Activities'], method: 'POST' }),
+    buildWorkspacePolicy({ resources: ['Activities'], method: 'POST' }, context),
+    buildWorkspacePolicy({ resources: ['Activities'], method: 'GET' }, context),
+    //
+    
+    buildWorkspacePolicy({ resources: ['Tasks', '**'], method: 'POST'  }, context),
+    buildWorkspacePolicy({ resources: ['Tasks', '**'], method: 'GET' }, context),
     // Workspace Activities Worker Reserations Policy
-    buildWorkspacePolicy({ resources: ['Workers', workerSid, 'Reservations', '**'], method: 'POST' }),
+    buildWorkspacePolicy({ resources: ['Workers', worker, 'Reservations', '**'], method: 'POST' }, context),
+    buildWorkspacePolicy({ resources: ['Workers', worker, 'Reservations', '**'], method: 'GET' }, context),
+    //
+    buildWorkspacePolicy({ resources: ['Workers', worker, 'Channels', '**'], method: 'POST' }, context),
+    buildWorkspacePolicy({ resources: ['Workers', worker, 'Channels', '**'], method: 'GET' }, context),
+    // Workspace Activities Worker  Policy
+    buildWorkspacePolicy({ resources: ['Workers', worker], method: 'GET' }, context),
+    buildWorkspacePolicy({ resources: ['Workers', worker], method: 'POST' }, context),
   ];
-
   eventBridgePolicies.concat(workspacePolicies).forEach(function (policy) {
     capability.addPolicy(policy);
   });
+  response.setBody({token: capability.toJwt()});
+  console.log(response.body);
+  callback(null, response);
+})
 
-  var token = capability.toJwt();
+// app.post('/worker_token', function (req, res) {
 
-  res.send(token);
-});
+//   const workerSid = req.body.WorkerSid;
+
+//   const capability = new TaskRouterCapability({
+//     accountSid: accountSid,
+//     authToken: authToken,
+//     workspaceSid: workspaceSid,
+//     channelId: workerSid
+//   });
+
+//   var eventBridgePolicies = util.defaultEventBridgePolicies(accountSid, workerSid);
+
+//   var workspacePolicies = [
+//     // Workspace fetch Policy
+//     buildWorkspacePolicy(),
+//     // Workspace subresources fetch Policy
+//     buildWorkspacePolicy({ resources: ['**'] }),
+//     // Workspace Activities Update Policy
+//     buildWorkspacePolicy({ resources: ['Activities'], method: 'POST' }),
+//     // Workspace Activities Worker Reserations Policy
+//     buildWorkspacePolicy({ resources: ['Workers', workerSid, 'Reservations', '**'], method: 'POST' }),
+//   ];
+
+//   eventBridgePolicies.concat(workspacePolicies).forEach(function (policy) {
+//     capability.addPolicy(policy);
+//   });
+
+//   var token = capability.toJwt();
+
+//   res.send(token);
+// });
 
 
 app.post('/client_token', function (req, res) {
@@ -210,8 +264,8 @@ app.post('/client_token', function (req, res) {
   const token = capability.toJwt();
 
   res.set('Content-Type', 'application/jwt');
-  res.send(token);;
+  res.send(token);
 
-});
+})
 
 app.listen(3000, () => console.log('Example app listening on port 3000!'));
