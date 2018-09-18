@@ -4,8 +4,6 @@ Inbound PSTN to Twilio Client Contact Centre Powered by Taskrouter
 
 Languages: Node js
 
-(Alpha)
-
 This implements:
 
 - Single channel (Voice)
