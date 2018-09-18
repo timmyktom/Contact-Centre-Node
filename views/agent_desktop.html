@@ -8,7 +8,7 @@
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
 
     <link type="text/css" rel="stylesheet" href="//media.twiliocdn.com/taskrouter/quickstart/agent.css"/>
-    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="css/bootstrap.min.css" rel="stylesheet" type="text/css">
 
     <style>
         .btn {
@@ -96,7 +96,9 @@
         let activity_list = {};
         
         function registerTaskRouterCallbacks(data) {
-              worker = new Twilio.TaskRouter.Worker(data);     
+            console.log(data); 
+            worker = new Twilio.TaskRouter.Worker(data);     
+             
               worker.on('ready', function (worker) {
                 logger("Successfully registered as: " + worker.friendlyName);
                 if(worker.attributes.skills && worker.attributes.skills.includes('manager')) {
@@ -150,7 +152,6 @@
 
         function goAvailable() {
             // update worker's activity to Idle
-            console.log(activity_list["Idle"]);
             worker.update("ActivitySid", activity_list["Idle"], function (error, worker) {
                 if (error) {
                     console.log(error.code);
