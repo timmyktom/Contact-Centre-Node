@@ -94,6 +94,7 @@
         let worker;
         let isManager = false;  // workaround for worker's skills not being passed with a reservation
         let activity_list = {};
+        
         function registerTaskRouterCallbacks(data) {
               worker = new Twilio.TaskRouter.Worker(data);     
               worker.on('ready', function (worker) {
@@ -354,9 +355,9 @@
             }  
 
             let Worker_sid = getParameterByName('WorkerSid'); 
+            console.log(Worker_sid);
             
-            
-            $.post( "/worker_token", { WorkerSid: Worker_sid })
+            $.post( "/worker_token", { WorkerSid: getParameterByName('WorkerSid') })
               .done(function( data ) {  
               
                registerTaskRouterCallbacks(data);
@@ -389,22 +390,17 @@
             
             }
         }
-           // console.log(activity_list['Idle']);
                     
                 })
 
-                 
-
-
-           
+                
 
             $.post( "/client_token", { WorkerSid: Worker_sid })
               .done(function( data ) {
                 Twilio.Device.setup(data, {debug: true});
               
               });         
-           
-             
+            
            
              logger("Initializing...");
             
