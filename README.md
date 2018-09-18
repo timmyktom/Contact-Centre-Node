@@ -8,16 +8,16 @@ Languages: Node js
 
 This implements:
 
-Single channel (Voice)
-4 departments
-Agent UI based on TaskRouter SDK for low latency
-Twilio Client WebRTC dashboard
-Conference instruction
-Call instruction
-Conference recording
-Call holding
-Call transfers
-optional assignment_callback url implementation
+- Single channel (Voice)
+-  4 departments
+-  Agent UI based on TaskRouter SDK for low latency
+-  Twilio Client WebRTC agent dashboard
+- Conference instruction
+- Call instruction
+- Conference recording
+- Call holding
+- Call transfers
+- Optional assignment_callback url implementation
 
 KNOWN ISSUES:
 
