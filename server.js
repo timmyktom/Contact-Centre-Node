@@ -86,7 +86,7 @@ app.post('/incoming_call', function (req, res) {
 app.post('/enqueue_call', function (req, res) {
 
   const response = new VoiceResponse();
-  var Digits = req.query.Digits;
+  var Digits = req.body.Digits;
 
   var product = {
     1: 'sales',
