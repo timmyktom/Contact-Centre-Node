@@ -135,6 +135,39 @@ app.get('/agents', function (req, res) {
   res.render('agent_desktop.html');
 });
 
+app.post('/callTransfer', function(req, res){
+const response = new VoiceResponse();
+ 
+
+client.conferences(req.body.conference)
+      .participants(req.body.participant)
+      .update({muted: true})
+      .then(participant => console.log(participant.callSid))
+      .done();
+
+      client.taskrouter.workspaces(workspaceSid)
+                 .tasks
+                 .create({attributes: JSON.stringify({
+                  selected_product: 'manager',
+                  conference: req.body.conference,
+                  }), workflowSid: workflow_sid})
+                 .then(task => console.log(task.sid))
+                 .done();
+
+                 res.send(response.toString());
+
+});
+
+app.post('/transferTwiml', function(req, res){
+  const response = new VoiceResponse();
+  const dial = response.dial();
+  dial.conference(req.body.conference);
+  
+  res.send(response.toString());
+  
+
+});
+
 app.post('/activities', function (req, res) {
   var list = [];
 
