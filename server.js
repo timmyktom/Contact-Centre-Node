@@ -137,34 +137,43 @@ app.get('/agents', function (req, res) {
 
 app.post('/callTransfer', function(req, res){
 const response = new VoiceResponse();
- 
 
 client.conferences(req.body.conference)
       .participants(req.body.participant)
-      .update({muted: true})
-      .then(participant => console.log(participant.callSid))
-      .done();
-
+      .update({hold: true});
+      
       client.taskrouter.workspaces(workspaceSid)
                  .tasks
                  .create({attributes: JSON.stringify({
                   selected_product: 'manager',
                   conference: req.body.conference,
+                  customer_taskSid:req.body.taskSid,
+                  customer:req.body.participant,
                   }), workflowSid: workflow_sid})
-                 .then(task => console.log(task.sid))
+                 .then(res.send(response.toString()))
                  .done();
-
-                 res.send(response.toString());
+                 
 
 });
 
 app.post('/transferTwiml', function(req, res){
   const response = new VoiceResponse();
   const dial = response.dial();
-  dial.conference(req.body.conference);
+  console.log(req.param.taskSid);
+  console.log(req.body.taskSid);
+  dial.conference(req.body.taskSid);
   
   res.send(response.toString());
   
+
+});
+
+
+app.post('/callMute', function(req, res){
+
+  client.conferences(req.body.conference)
+      .participants(req.body.participant)
+      .update({hold: req.body.muted});
 
 });
 
