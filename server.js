@@ -135,45 +135,49 @@ app.get('/agents', function (req, res) {
   res.render('agent_desktop.html');
 });
 
-app.post('/callTransfer', function(req, res){
-const response = new VoiceResponse();
-
-client.conferences(req.body.conference)
-      .participants(req.body.participant)
-      .update({hold: true});
-      
-      client.taskrouter.workspaces(workspaceSid)
-                 .tasks
-                 .create({attributes: JSON.stringify({
-                  selected_product: 'manager',
-                  conference: req.body.conference,
-                  customer_taskSid:req.body.taskSid,
-                  customer:req.body.participant,
-                  }), workflowSid: workflow_sid})
-                 .then(res.send(response.toString()))
-                 .done();
-                 
-
-});
-
-app.post('/transferTwiml', function(req, res){
+app.post('/callTransfer', function (req, res) {
   const response = new VoiceResponse();
-  const dial = response.dial();
-  console.log(req.param.taskSid);
-  console.log(req.body.taskSid);
-  dial.conference(req.body.taskSid);
-  
-  res.send(response.toString());
-  
-
-});
-
-
-app.post('/callMute', function(req, res){
 
   client.conferences(req.body.conference)
-      .participants(req.body.participant)
-      .update({hold: req.body.muted});
+    .participants(req.body.participant)
+    .update({ hold: true });
+
+  client.taskrouter.workspaces(workspaceSid)
+    .tasks
+    .create({
+      attributes: JSON.stringify({
+        selected_product: 'manager',
+        conference: req.body.conference,
+        customer_taskSid: req.body.taskSid,
+        customer: req.body.participant,
+      }), workflowSid: workflow_sid
+    })
+    .then(res.send(response.toString()))
+    .done();
+
+
+});
+
+app.post('/transferTwiml', function (req, res) {
+
+  const url = require('url');
+  const response = new VoiceResponse();
+  const dial = response.dial();
+  const querystring = url.parse(req.url, true);
+
+  dial.conference(querystring.query.conference);
+
+  res.send(response.toString());
+
+
+});
+
+
+app.post('/callMute', function (req, res) {
+
+  client.conferences(req.body.conference)
+    .participants(req.body.participant)
+    .update({ hold: req.body.muted });
 
 });
 
@@ -228,7 +232,7 @@ app.use('/worker_token', function (req, res) {
 
     buildWorkspacePolicy({ resources: ['Tasks', '**'], method: 'POST' }),
     buildWorkspacePolicy({ resources: ['Tasks', '**'], method: 'GET' }),
-    
+
     // Workspace Worker Reservation Policy
     buildWorkspacePolicy({ resources: ['Workers', workerSid, 'Reservations', '**'], method: 'POST' }),
     buildWorkspacePolicy({ resources: ['Workers', workerSid, 'Reservations', '**'], method: 'GET' }),
