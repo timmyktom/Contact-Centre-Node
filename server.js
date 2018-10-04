@@ -137,7 +137,7 @@ app.post('/agent_list', function(req, res) {
 });
 
 app.get('/agents', function(req, res) {
-  res.render('agent_desktop.html');
+  res.render('agent_desktop.html', { caller_id: caller_id });
 });
 
 app.post('/callTransfer', function(req, res) {
