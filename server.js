@@ -68,11 +68,37 @@ app.set('views', __dirname + '/views'); // you can change '/views' to '/public',
 // but I recommend moving your templates to a directory
 // with no outside access for security reasons
 
-app.get('/', function(req, res) {
+app.get('/', function (req, res) {
   res.render('index.html');
 });
 
-app.post('/incoming_call', function(req, res) {
+app.get('/group_call', function (req, res) {
+  const resp = new VoiceResponse();
+  const timeframe = new Date(Date.UTC(2018, 9, 8, 0, 0, 0))
+
+  client.messages.each({ to: '+14152002423', dateSent: timeframe },
+    messages => client.calls.create({
+      from: caller_id,
+      to: messages.from,
+      url: 'https://62953e6e.ngrok.io/conference'
+    }));
+
+  res.send(resp.toString());
+});
+
+app.post('/conference', function (req, res) {
+
+  const resp = new VoiceResponse();
+  const dial = resp.dial();
+
+  dial.conference('trainingConference');
+  res.setHeader('Content-Type', 'application/xml');
+
+  res.send(resp.toString());
+
+});
+
+app.post('/incoming_call', function (req, res) {
   const response = new VoiceResponse();
 
   const gather = response.gather({
@@ -89,7 +115,7 @@ app.post('/incoming_call', function(req, res) {
   res.send(response.toString());
 });
 
-app.post('/enqueue_call', function(req, res) {
+app.post('/enqueue_call', function (req, res) {
   const response = new VoiceResponse();
   var Digits = req.body.Digits;
 
@@ -107,7 +133,60 @@ app.post('/enqueue_call', function(req, res) {
   res.send(response.toString());
 });
 
-app.post('/assignment_callback', function(req, res) {
+app.post('/startPay', function(req, res){
+
+var url = require('url');
+var myURL =  url.parse('https://6d70964d.ngrok.io/pay?task='+req.body.taskSid.toString());
+
+//console.log(myURL);
+  client.calls(req.body.customerCall)
+  .update({
+    method:'POST',
+    url:myURL.href,
+  
+  })
+  .then(console.log('customer call updated'))
+  .done();
+
+})
+
+
+app.post('/pay', function (req, res){
+
+  const resp = new VoiceResponse();
+  const url = require('url');
+  
+  const querystring = url.parse(req.url, true);
+  const task = querystring.query.task;
+  const actionUrl = url.parse('https://6d70964d.ngrok.io/complete?task='+task);
+
+  resp.say('Please enter your credit card information');
+  resp.pay({
+    chargeAmount:'20.00',
+    action:actionUrl.href
+  });
+
+  res.type('application/xml');
+  res.send(resp.toString());
+  
+});
+
+app.post('/complete', function(req, res){
+
+  const resp = new VoiceResponse();
+  const dial = resp.dial();
+  
+  const url = require('url');
+  const querystring = url.parse(req.url, true);
+
+  dial.conference(querystring.query.task);
+
+  res.type('application/xml');
+  res.send(resp.toString());
+
+});
+
+app.post('/assignment_callback', function (req, res) {
   dequeue = {
     instruction: 'dequeue',
     from: caller_id,
@@ -118,11 +197,11 @@ app.post('/assignment_callback', function(req, res) {
   res.json(dequeue);
 });
 
-app.get('/agent_list', function(req, res) {
+app.get('/agent_list', function (req, res) {
   res.render('agent_list.html');
 });
 
-app.post('/agent_list', function(req, res) {
+app.post('/agent_list', function (req, res) {
   client.taskrouter.v1
     .workspaces(workspaceSid)
     .workers.list({
@@ -136,11 +215,11 @@ app.post('/agent_list', function(req, res) {
     });
 });
 
-app.get('/agents', function(req, res) {
+app.get('/agents', function (req, res) {
   res.render('agent_desktop.html', { caller_id: caller_id });
 });
 
-app.post('/callTransfer', function(req, res) {
+app.post('/callTransfer', function (req, res) {
   const response = new VoiceResponse();
 
   client
@@ -163,7 +242,7 @@ app.post('/callTransfer', function(req, res) {
     .done();
 });
 
-app.post('/transferTwiml', function(req, res) {
+app.post('/transferTwiml', function (req, res) {
   const url = require('url');
   const response = new VoiceResponse();
   const dial = response.dial();
@@ -174,14 +253,14 @@ app.post('/transferTwiml', function(req, res) {
   res.send(response.toString());
 });
 
-app.post('/callMute', function(req, res) {
+app.post('/callMute', function (req, res) {
   client
     .conferences(req.body.conference)
     .participants(req.body.participant)
     .update({ hold: req.body.muted });
 });
 
-app.post('/activities', function(req, res) {
+app.post('/activities', function (req, res) {
   var list = [];
 
   client.taskrouter.v1
@@ -194,7 +273,7 @@ app.post('/activities', function(req, res) {
     });
 });
 
-app.use('/worker_token', function(req, res) {
+app.use('/worker_token', function (req, res) {
   let jwt = require('jsonwebtoken');
   //Set access control headers to avoid CORBs issues
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -259,7 +338,7 @@ app.use('/worker_token', function(req, res) {
     buildWorkspacePolicy({ resources: ['Workers', workerSid], method: 'POST' })
   ];
 
-  eventBridgePolicies.concat(workspacePolicies).forEach(function(policy) {
+  eventBridgePolicies.concat(workspacePolicies).forEach(function (policy) {
     capability.addPolicy(policy);
   });
 
@@ -268,7 +347,7 @@ app.use('/worker_token', function(req, res) {
   res.json(token);
 });
 
-app.post('/client_token', function(req, res) {
+app.post('/client_token', function (req, res) {
   const identity = req.body.WorkerSid;
 
   const capability = new ClientCapability({
