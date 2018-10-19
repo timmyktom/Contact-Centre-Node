@@ -4,7 +4,7 @@
 <head>
     <title>OwlCorp - Chat Agent Screen</title>
 
-    <script type="text/javascript" src="//media.twiliocdn.com/sdk/js/client/v1.6/twilio.min.js"></script>
+    <script type="text/javascript" src="//media.twiliocdn.com/sdk/js/client/v1.4/twilio.min.js"></script>
     <script type="text/javascript" src="//media.twiliocdn.com/taskrouter/js/v1.13/taskrouter.min.js"></script>
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
 
@@ -42,185 +42,112 @@
 
 
     <script type="text/javascript">
-        let worker;
-        let ReservationObject;
-        let isManager = false;  // workaround for worker's skills not being passed with a reservation
-        let activity_list = {};
         let caller_id = "{{ caller_id }}"
 
-        var device;
-        $(function () {
+        Twilio.Device.ready(function (device) {
+            console.log("Client is ready for connections");
+        });
 
-            function getParameterByName(name, url) {
-                if (!url) url = window.location.href;
-                name = name.replace(/[\[\]]/g, "\\$&");
-                var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
-                    results = regex.exec(url);
-                if (!results) return null;
-                if (!results[2]) return '';
-                return decodeURIComponent(results[2].replace(/\+/g, " "));
-            }
+        Twilio.Device.error(function (error) {
+            $("#logger").text("Error: " + error.message);
+        });
 
-            let Worker_sid = getParameterByName('WorkerSid');
+        Twilio.Device.connect(function (conn) {
+            $("#logger").text("Successfully established call");
+        });
 
-            $.post("/client_token", { WorkerSid: Worker_sid })
-                .then(function (data) {
+        Twilio.Device.disconnect(function (conn) {
+            $("#logger").text("Call ended");
+        });
 
-                    device = new Twilio.Device(data);
-                    console.log(device);
-                    //  Twilio.Device.setup(data, { debug: true });
+        Twilio.Device.incoming(function (conn) {
+            //$("#logger").text("Incoming connection from " + conn.parameters.From);
+            // accept the incoming connection and start two-way audio
+            conn.accept();
+        });
 
-                    let Worker_sid = getParameterByName('WorkerSid');
-                    console.log(Worker_sid);
-
-                    $.post("/worker_token", { WorkerSid: getParameterByName('WorkerSid') })
-                        .then(function (data) {
-
-                            console.log(data);
-                            worker = new Twilio.TaskRouter.Worker(data);
-
-                            worker.on('ready', function (worker) {
-                                logger("Successfully registered as: " + worker.friendlyName);
-                                if (worker.attributes.skills && worker.attributes.skills.includes('manager')) {
-                                    document.querySelector('h2').innerHTML = "ACME manager desktop: " + worker.friendlyName;
-                                    isManager = true;
-                                } else {
-                                    document.querySelector('h2').innerHTML = "ACME agent desktop: " + worker.friendlyName;
-                                }
-                                if (worker.attributes.skills) {
-                                    logger("Skills: " + worker.attributes.skills);
-                                }
-                                logger("Current activity is: " + worker.activityName);
-                                refreshWorkerUI(worker);
-                            });
-
-                            worker.on('activity.update', function (worker) {
-                                let activityName = worker.activityName;
-                                logger("Worker activity changed to: " + activityName);
-                                refreshWorkerUI(worker)
-                            });
-
-                            worker.on('reservation.created', function (reservation) {
-                                logger("-----");
-                                logger("You have been reserved to handle a call!");
-                                logger("Call from: " + reservation.task.attributes.from);
-                                logger("Selected language: " + reservation.task.attributes.selected_language);
-                                logger("Customer request: " + reservation.task.attributes.selected_product);
-                                logger("-----");
-                                logger(reservation.sid);
-                                refreshWorkerUI(worker, "Incoming Reservation")
-                                ReservationObject = reservation;  // set global ReservationObject
-                            });
-
-                            worker.on('reservation.accepted', function (reservation) {
-                                logger("Reservation " + reservation.sid + " accepted!");
-                                ReservationObject = reservation; // update reservationObject to contain the updated reservation information/task attributes e.g. conference
-                            });
-
-                            worker.on('reservation.rejected', function (reservation) {
-                                logger("Reservation " + reservation.sid + " rejected!");
-                            });
-
-                            worker.on('reservation.timeout', function (reservation) {
-                                logger("Reservation " + reservation.sid + " timed out!");
-                            });
-
-                            worker.on('reservation.canceled', function (reservation) {
-                                logger("Reservation " + reservation.sid + " canceled!");
-                            });
-
-                        });
-
-
-                    $.post("/activities").then(function (data) {
-
-                        var name;
-                        var sid;
-
-
-                        for (var i = 0; i < data.length; i++) {
-
-                            if (data[i] !== 'undefined') {
-                                var obj = data[i];
-
-                                for (var key in obj) {
-
-                                    if (key == 'friendlyName') {
-                                        name = obj[key];
-
-                                    } else if (key == 'sid') {
-                                        sid = obj[key];
-                                    }
-                                    activity_list[name] = sid;
-
-
-                                }
-
-                            }
-                        }
-
-                    })
-
-                    device.on('ready', function (device) {
-                        logger('Twilio.Device Ready!');
-                    });
-
-                    device.on('error', function (error) {
-                        $("#logger").text("Error: " + error.message);
-                    });
-
-                    device.on('connect', function (conn) {
-                        $("#logger").text("Successfully established call");
-                    });
-
-                    device.on('disconnect', function (conn) {
-                        $("#logger").text("Call ended");
-                    });
-
-                    device.on('incoming', function (conn) {
-                        //$("#logger").text("Incoming connection from " + conn.parameters.From);
-                        // accept the incoming connection and start two-way audio
-                        conn.accept();
-                    });
-
-
-                    function call() {
-                        // get the phone number or client to connect the call to
-                        params = { "PhoneNumber": $("#number").val() };
-                        device.connect(params);
-                    }
-
-                    
-
-                });
-        })
+        function call() {
+            // get the phone number or client to connect the call to
+            params = { "PhoneNumber": $("#number").val() };
+            Twilio.Device.connect(params);
+        }
 
         function hangup() {
 
-ReservationObject.task.complete();
+            ReservationObject.task.complete();
+            Twilio.Device.disconnectAll();
 
-device.disconnectAll();
-worker.update("ActivitySid", activity_list["WrapUp"], function (error, worker) {
-    //logger(worker.friendlyName + " has ended the call");
+            worker.update("ActivitySid", activity_list["WrapUp"], function (error, worker) {
+                //logger(worker.friendlyName + " has ended the call");
 
-    if (error) {
-        console.log(error.code);
-        console.log(error.message);
-    } else {
-        console.log(worker.activityName);
-    }
-});
-
-}
-
-        function goOffline() {
-            // update worker's activity to Offline
-
-            worker.update("ActivitySid", activity_list["Offline"], function (error, worker) {
                 if (error) {
                     console.log(error.code);
                     console.log(error.message);
+                } else {
+                    console.log(worker.activityName);
                 }
+            });
+        }
+
+
+        //TaskRouter JS code
+        let ReservationObject;
+        let worker;
+        let isManager = false;  // workaround for worker's skills not being passed with a reservation
+        let activity_list = {};
+
+        function registerTaskRouterCallbacks(data) {
+            console.log(data);
+            worker = new Twilio.TaskRouter.Worker(data);
+
+            worker.on('ready', function (worker) {
+                logger("Successfully registered as: " + worker.friendlyName);
+                if (worker.attributes.skills && worker.attributes.skills.includes('manager')) {
+                    document.querySelector('h2').innerHTML = "ACME manager desktop: " + worker.friendlyName;
+                    isManager = true;
+                } else {
+                    document.querySelector('h2').innerHTML = "ACME agent desktop: " + worker.friendlyName;
+                }
+                if (worker.attributes.skills) {
+                    logger("Skills: " + worker.attributes.skills);
+                }
+                logger("Current activity is: " + worker.activityName);
+                refreshWorkerUI(worker);
+            });
+
+            worker.on('activity.update', function (worker) {
+                let activityName = worker.activityName;
+                logger("Worker activity changed to: " + activityName);
+                refreshWorkerUI(worker)
+            });
+
+            worker.on('reservation.created', function (reservation) {
+                logger("-----");
+                logger("You have been reserved to handle a call!");
+                logger("Call from: " + reservation.task.attributes.from);
+                logger("Selected language: " + reservation.task.attributes.selected_language);
+                logger("Customer request: " + reservation.task.attributes.selected_product);
+                logger("-----");
+                logger(reservation.sid);
+                refreshWorkerUI(worker, "Incoming Reservation")
+                ReservationObject = reservation;  // set global ReservationObject
+            });
+
+            worker.on('reservation.accepted', function (reservation) {
+                logger("Reservation " + reservation.sid + " accepted!");
+                ReservationObject = reservation; // update reservationObject to contain the updated reservation information/task attributes e.g. conference
+            });
+
+            worker.on('reservation.rejected', function (reservation) {
+                logger("Reservation " + reservation.sid + " rejected!");
+            });
+
+            worker.on('reservation.timeout', function (reservation) {
+                logger("Reservation " + reservation.sid + " timed out!");
+            });
+
+            worker.on('reservation.canceled', function (reservation) {
+                logger("Reservation " + reservation.sid + " canceled!");
             });
         }
 
@@ -234,12 +161,24 @@ worker.update("ActivitySid", activity_list["WrapUp"], function (error, worker) {
             });
         }
 
+        function goOffline() {
+            // update worker's activity to Offline
+
+            worker.update("ActivitySid", activity_list["Offline"], function (error, worker) {
+                if (error) {
+                    console.log(error.code);
+                    console.log(error.message);
+                }
+            });
+        }
+
+        // Show/hide buttons corresponding to the activity
         function refreshWorkerUI(worker, activityOverride = null) {
             let activityName = activityOverride || worker.activityName;
 
             console.log("Worker activity: " + activityName);
             let buttons = {
-                'pay': false,
+                'pay':false,
                 'online': false,
                 'offline': false,
                 'mute': false,
@@ -404,12 +343,12 @@ worker.update("ActivitySid", activity_list["WrapUp"], function (error, worker) {
             }
         }
 
-        function startPayment() {
+        function startPayment(){
             console.log('payment called');
             $.post("/startPay", {
                 taskSid: ReservationObject.task.sid,
                 customerCall: ReservationObject.task.attributes.conference.participants.customer
-            });
+                });
         }
 
         function logger(message) {
@@ -419,8 +358,72 @@ worker.update("ActivitySid", activity_list["WrapUp"], function (error, worker) {
         }
 
 
+        window.onload = function () {
+            // Initialize TaskRouter.js on page load using window.workerToken -
+            // a Twilio Capability token that was set from rendering the template with agents endpoint
 
 
+            function getParameterByName(name, url) {
+                if (!url) url = window.location.href;
+                name = name.replace(/[\[\]]/g, "\\$&");
+                var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+                    results = regex.exec(url);
+                if (!results) return null;
+                if (!results[2]) return '';
+                return decodeURIComponent(results[2].replace(/\+/g, " "));
+            }
+
+            let Worker_sid = getParameterByName('WorkerSid');
+            console.log(Worker_sid);
+
+            $.post("/worker_token", { WorkerSid: getParameterByName('WorkerSid') })
+                .done(function (data) {
+
+                    registerTaskRouterCallbacks(data);
+                });
+
+
+            $.post("/activities").done(function (data) {
+
+                var name;
+                var sid;
+
+
+                for (var i = 0; i < data.length; i++) {
+
+                    if (data[i] !== 'undefined') {
+                        var obj = data[i];
+
+                        for (var key in obj) {
+
+                            if (key == 'friendlyName') {
+                                name = obj[key];
+
+                            } else if (key == 'sid') {
+                                sid = obj[key];
+                            }
+                            activity_list[name] = sid;
+
+
+                        }
+
+                    }
+                }
+
+            })
+
+
+
+            $.post("/client_token", { WorkerSid: Worker_sid })
+                .done(function (data) {
+                    Twilio.Device.setup(data, { debug: true });
+
+                });
+
+
+            logger("Initializing...");
+
+        };
     </script>
 </head>
 
